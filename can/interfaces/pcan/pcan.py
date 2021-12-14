@@ -6,6 +6,7 @@ import logging
 import time
 from datetime import datetime
 import platform
+import sys
 
 from typing import Optional
 
@@ -15,44 +16,47 @@ from ...util import len2dlc, dlc2len
 from ...exceptions import CanError, CanOperationError, CanInitializationError
 
 
-from .basic import (
-    PCAN_BITRATES,
-    PCAN_FD_PARAMETER_LIST,
-    PCAN_CHANNEL_NAMES,
-    PCAN_BAUD_500K,
-    PCAN_TYPE_ISA,
-    PCANBasic,
-    PCAN_ERROR_OK,
-    PCAN_ALLOW_ERROR_FRAMES,
-    PCAN_PARAMETER_ON,
-    PCAN_RECEIVE_EVENT,
-    PCAN_DEVICE_NUMBER,
-    PCAN_ERROR_QRCVEMPTY,
-    PCAN_ERROR_BUSLIGHT,
-    PCAN_ERROR_BUSHEAVY,
-    PCAN_MESSAGE_EXTENDED,
-    PCAN_MESSAGE_RTR,
-    PCAN_MESSAGE_FD,
-    PCAN_MESSAGE_BRS,
-    PCAN_MESSAGE_ESI,
-    PCAN_MESSAGE_ERRFRAME,
-    PCAN_MESSAGE_STANDARD,
-    TPCANMsgFD,
-    TPCANMsg,
-    PCAN_CHANNEL_IDENTIFYING,
-    PCAN_LISTEN_ONLY,
-    PCAN_PARAMETER_OFF,
-    TPCANHandle,
-    PCAN_PCIBUS1,
-    PCAN_USBBUS1,
-    PCAN_PCCBUS1,
-    PCAN_LANBUS1,
-    PCAN_CHANNEL_CONDITION,
-    PCAN_CHANNEL_AVAILABLE,
-    PCAN_CHANNEL_FEATURES,
-    FEATURE_FD_CAPABLE,
-    PCAN_DICT_STATUS,
-)
+if "--sim-pcan" in sys.argv:
+    from .dummy_basic import *
+else:
+    from .basic import (
+        PCAN_BITRATES,
+        PCAN_FD_PARAMETER_LIST,
+        PCAN_CHANNEL_NAMES,
+        PCAN_BAUD_500K,
+        PCAN_TYPE_ISA,
+        PCANBasic,
+        PCAN_ERROR_OK,
+        PCAN_ALLOW_ERROR_FRAMES,
+        PCAN_PARAMETER_ON,
+        PCAN_RECEIVE_EVENT,
+        PCAN_DEVICE_NUMBER,
+        PCAN_ERROR_QRCVEMPTY,
+        PCAN_ERROR_BUSLIGHT,
+        PCAN_ERROR_BUSHEAVY,
+        PCAN_MESSAGE_EXTENDED,
+        PCAN_MESSAGE_RTR,
+        PCAN_MESSAGE_FD,
+        PCAN_MESSAGE_BRS,
+        PCAN_MESSAGE_ESI,
+        PCAN_MESSAGE_ERRFRAME,
+        PCAN_MESSAGE_STANDARD,
+        TPCANMsgFD,
+        TPCANMsg,
+        PCAN_CHANNEL_IDENTIFYING,
+        PCAN_LISTEN_ONLY,
+        PCAN_PARAMETER_OFF,
+        TPCANHandle,
+        PCAN_PCIBUS1,
+        PCAN_USBBUS1,
+        PCAN_PCCBUS1,
+        PCAN_LANBUS1,
+        PCAN_CHANNEL_CONDITION,
+        PCAN_CHANNEL_AVAILABLE,
+        PCAN_CHANNEL_FEATURES,
+        FEATURE_FD_CAPABLE,
+        PCAN_DICT_STATUS,
+    )
 
 
 # Set up logging

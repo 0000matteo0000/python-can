@@ -2,3 +2,5 @@ include *.txt
 include test/*.py
 include test/data/*.*
 recursive-include doc *.rst
+recursive-include can/interfaces/ginkgousbcan/**/ *
+recursive-include can/interfaces/pcan/**/ *

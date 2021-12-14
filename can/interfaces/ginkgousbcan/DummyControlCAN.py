@@ -1,0 +1,321 @@
+import csv
+import struct
+import sys
+from ctypes import Structure, c_byte, c_ubyte, c_uint, c_ushort
+from itertools import cycle
+from math import pi, sin
+
+import numpy as np
+from PyQt5.QtCore import QThread
+
+
+# Compatible with other CAN adapter datatype
+class VCI_BOARD_INFO(Structure):
+    _fields_ = [
+        ("hw_Version", c_ushort),  # hardware version, in hex format, for example: 0x0100 present version is 1.00
+        ("fw_Version", c_ushort),  # firmware version in hex format
+        ("dr_Version", c_ushort),  # driver version, in hex format
+        ("in_Version", c_ushort),  # interface library version, in hex format
+        ("irq_Num", c_ushort),  # interrupt number used by board
+        ("can_Num", c_ubyte),  # CAN channel number
+        ("str_Serial_Num", c_ubyte * 20),  # CAN board serial number
+        ("str_hw_Type", c_ubyte * 40),  # string for hardware type,for example:"USBCAN V1.00\0"(note:include string null end'\0').
+        ("Reserved", c_ushort * 4)
+    ]
+
+
+# Compatible with other CAN adapter datatype
+class VCI_BOARD_INFO_EX(Structure):
+    _fields_ = [
+        ("ProductName", c_ubyte * 32),  # hardware name,for example: "Ginkgo-CAN-Adaptor\0"(note: include string null end'\0')
+        ("FirmwareVersion", c_ubyte * 4),  # firmware version
+        ("HardwareVersion", c_ubyte * 4),  # hardware version
+        ("SerialNumber", c_ubyte * 12)  # adatper serial number
+    ]
+
+
+# Definition of CAN frame
+class VCI_CAN_OBJ(Structure):
+    _fields_ = [
+        ("ID", c_uint),  # Frame ID
+        ("TimeStamp", c_uint),  # timestamp of the frame arriving,started from initialization of CAN controller
+        ("TimeFlag", c_byte),  # if using timestamp. 1: use TimeStamp, 0:not use. TimeFlag and TimeStamp is available when the frame is recived frame
+        ("SendType", c_byte),  # send frame type. 0: normal send,1: single send,2: self send/receive,3: single self send/receive
+        ("RemoteFlag", c_byte),  # remote frame flag
+        ("ExternFlag", c_byte),  # extended frame flag
+        ("DataLen", c_byte),  # Data length(<=8),how many uint8_ts of data
+        ("Data", c_ubyte * 8),  # text data
+        ("Reserved", c_byte * 3)  # reserved
+    ]
+
+
+# definition of CAN controller status
+class VCI_CAN_STATUS(Structure):
+    _fields_ = [
+        ("ErrInterrupt", c_byte),  # interrupt record,will be cleared while reading
+        ("regMode", c_byte),  # CAN controller mode register
+        ("regStatus", c_byte),  # CAN controller status register
+        ("regALCapture", c_byte),  # CAN controller arbitrator lost register
+        ("regECCapture", c_byte),  # CAN controller error register
+        ("regEWLimit", c_byte),  # CAN controller error alarm limitation register
+        ("regRECounter", c_byte),  # CAN controller receive error register
+        ("regTECounter", c_byte),  # CAN controller send error register
+        ("regESR", c_uint),  # CAN controller status register
+        ("regTSR", c_uint),  # CAN controller status register
+        ("BufferSize", c_uint),  # CAN controller receive buffer size
+        ("Reserved", c_uint),  #
+    ]
+
+
+# definition of error data type
+class VCI_ERR_INFO(Structure):
+    _fields_ = [
+        ("ErrCode", c_uint),  # error code
+        ("Passive_ErrData", c_ubyte * 3),  # error identification data when error has passive error
+        ("ArLost_ErrData", c_ubyte)  # error identification data when error has arbitration lost error
+    ]
+
+
+"""
+CAN band rate   Timing0     Timing1
+5Kbps           0xBF        0xFF
+10Kbps          0x31        0x1C
+20Kbps          0x18        0x1C
+40Kbps          0x87        0xFF
+50Kbps          0x09        0x1C
+80Kbps          0x83        0xFF
+100Kbps         0x04        0x1C
+125Kbps         0x03        0x1C
+200Kbps         0x81        0xFA
+250Kbps         0x01        0x1C
+400Kbps         0x80        0xFA
+500Kbps         0x00        0x1C
+666Kbps         0x80        0xB6
+800Kbps         0x00        0x16
+1000Kbps        0x00        0x14
+"""
+
+
+# definition of CAN initialization data type
+class VCI_INIT_CONFIG(Structure):
+    _fields_ = [
+        ("AccCode", c_uint),  # ACC code (for verification)
+        ("AccMask", c_uint),  # Mask code
+        ("Reserved", c_uint),  #
+        ("Filter", c_byte),  # filter type.0: double filter,1: single filter
+        ("Timing0", c_byte),  # Timer 0
+        ("Timing1", c_byte),  # Timer 1
+        ("Mode", c_byte)
+    ]
+
+
+# Definition of CAN initialization data type
+"""
+CAN baudrate = 36MHz/(CAN_BRP)/(CAN_SJW+CAN_BS1+CAN_BS2)
+baudrate (bps) CAN_BRP CAN_SJW CAN_BS1 CAN_BS2
+1M                9        1       2       1
+900K              5        1       5       2
+800K              3        1      10      4
+600K             12       1       3       1
+666K             6         1       7       1
+500K             12       1       4       1
+400K             10       1       7       1
+300K             15       1       6       1
+250K             18       1       6       1
+200K             10       1       15     2
+150K             30       1       6       1
+125K             36       1       6       1
+100K             45       1       6       1
+90K               50       1       6       1
+80K               75       1       4       1
+60K               75       1       6       1
+50K               90       1       6       1
+40K               100     1       7       1
+30K               150     1       6       1
+20K               225     1       6       1
+
+more baudrate parameters and detail please download:
+Ginkgo USB-CAN Interface STM32 baud rate calculation software:
+http://www.viewtool.com/demo/download/Ginkgo2/Ginkgo_USB-CAN_Baudrate_Windows.rar
+"""
+
+
+class VCI_INIT_CONFIG_EX(Structure):
+    _fields_ = [
+        ("CAN_BRP", c_uint),  # range: 1~1024,
+        ("CAN_SJW", c_byte),  # range: 1~4
+        ("CAN_BS1", c_byte),  # range: 1~16
+        ("CAN_BS2", c_byte),  # range: 1~8
+        ("CAN_Mode", c_byte),  # CAN working mode. 0: normal,1: loopback,2: silent,3: silent loopback
+        ("CAN_ABOM", c_byte),  # auto off line management. 0: prohibit,1: enable
+        ("CAN_NART", c_byte),  # text repeat send management. 0: enable text repeat sending,1: disable text repeat sending
+        ("CAN_RFLM", c_byte),  # FIFO lock management. 0: new text overwrite old, 1: ignore new text
+        ("CAN_TXFP", c_byte),  # send priority management, 0: by ID, 1: by order
+        ("CAN_RELAY", c_byte),  # relay feature enable. 0x00: close relay function,0x10: relay from CAN1 to CAN2,0x01: relay from CAN2 to CAN1, 0x11: bidirectionaly relay
+        ("Reserved", c_uint)  # reserved
+    ]
+
+
+# definition of CAN filter setting
+class VCI_FILTER_CONFIG(Structure):
+    _fields_ = [
+        ("Enable", c_byte),  # filter enable. 1: enable,0: disable
+        ("FilterIndex", c_byte),  # filter index. range: 0~13
+        ("FilterMode", c_byte),  # filter mode.0: mask bit,1: id list
+        ("ExtFrame", c_byte),  # filter frame flag. 1: the frame to be filtered is extended frame,0: the frame to be filtered is standard frame
+        ("ID_Std_Ext", c_uint),  # verification code ID
+        ("ID_IDE", c_uint),  # verification code IDE
+        ("ID_RTR", c_uint),  # verification code RTR
+        ("MASK_Std_Ext", c_uint),  # Mask code ID,only available when filter mode set to mask bit mode
+        ("MASK_IDE", c_uint),  # Mask code IDE,only available when filter mode set to mask bit mode
+        ("MASK_RTR", c_uint),  # Mask code RTR,only available when filter mode set to mask bit mode
+        ("Reserved", c_uint),  # reserved
+    ]
+
+
+# CAN type definition
+VCI_USBCAN1 = 3
+VCI_USBCAN2 = 4
+
+# CAN error code
+ERR_CAN_OVERFLOW = 0x0001  # CAN controller internal FIFO overflow
+ERR_CAN_ERRALARM = 0x0002  # CAN controller error alarm
+ERR_CAN_PASSIVE = 0x0004  # CAN controller passive error
+ERR_CAN_LOSE = 0x0008  # CAN controller arbitration lost
+ERR_CAN_BUSERR = 0x0010  # CAN arbitration bus error
+ERR_CAN_BUSOFF = 0x0020  # CAN arbitration bus off
+
+# Generic error code
+ERR_DEVICEOPENED = 0x0100  # Device is opened
+ERR_DEVICEOPEN = 0x0200  # Device open failed
+ERR_DEVICENOTOPEN = 0x0400  # Device not open
+ERR_BUFFEROVERFLOW = 0x0800  # Buffer overflow
+ERR_DEVICENOTEXIST = 0x1000  # Device is not exist
+ERR_LOADKERNELDLL = 0x2000  # Load dll failed
+ERR_CMDFAILED = 0x4000  # Command execution failed
+ERR_BUFFERCREATE = 0x8000  # Memory is not enough
+
+# Function return status
+STATUS_OK = 0x01
+STATUS_ERR = 0x00
+
+
+# Scan device
+def VCI_ScanDevice(NeedInit=1):
+    return 1  # Success
+
+
+# Open device
+def VCI_OpenDevice(DevType, DevIndex, Reserved):
+    return 1  # Success
+
+
+# Close device
+def VCI_CloseDevice(DevType, DevIndex):
+    return 1  # Success
+
+
+# Initialize device
+def VCI_InitCAN(DevType, DevIndex, CANIndex, pInitConfig):
+    return 1  # Success
+
+
+# Initialize device extend
+def VCI_InitCANEx(DevType, DevIndex, CANIndex, pInitConfig):
+    return 1  # Success
+
+
+# Get board infomation
+def VCI_ReadBoardInfoEx(DevIndex, pInfo):
+    return 1  # Success
+
+
+# Get CAN status
+def VCI_ReadCANStatus(DevType, DevIndex, CANIndex, pCANStatus):
+    return 1  # Success
+
+
+# Set CAN filter
+def VCI_SetFilter(DevType, DevIndex, CANIndex, pFilter):
+    return 1  # Success
+
+
+channels = ["--sim-ginkgo-channel-0" in sys.argv, "--sim-ginkgo-channel-1" in sys.argv]
+
+
+# Get CAN number from buffer
+def VCI_GetReceiveNum(DevType, DevIndex, CANIndex):
+    global channels
+    if channels[CANIndex]:
+        return 1  # Recived count
+    else:
+        return 0  # Recived count
+
+
+# Clear CAN buffer
+def VCI_ClearBuffer(DevType, DevIndex, CANIndex):
+    return 1  # Success
+
+
+# Register receive callback function
+def VCI_RegisterReceiveCallback(DevIndex, pReceiveCallBack):
+    return 1  # Success
+
+
+# Logout receive callback function
+def VCI_LogoutReceiveCallback(DevIndex):
+    return 1  # Success
+
+
+# Start receive CAN
+def VCI_StartCAN(DevType, DevIndex, CANIndex):
+    return 1  # Success
+
+
+# Stop and reset CAN
+def VCI_ResetCAN(DevType, DevIndex, CANIndex):
+    return 1  # Success
+
+
+# Transmit CAN data
+def VCI_Transmit(DevType, DevIndex, CANIndex, pSend, Len):
+    return 1  # Success
+
+
+timing = None
+
+
+def set_timing_function(timing_function):
+    global timing
+    timing = timing_function
+
+
+distance = cycle([round(5000 + 50000 * (0.5 + 0.5 * sin(a))) for a in np.linspace(0, 2 * pi, num=1000)])
+with open("src/prove/t.csv") as f:
+    sterzo_packets = cycle(list(csv.DictReader(f, fieldnames=["count", "index", "direction", "type", "format", "frame_id", "length", "data", "status", "time"])))
+
+
+# Read CAN data from buffer
+def VCI_Receive(DevType, DevIndex, CANIndex, pReceive, Len, WaitTime):
+    # to fix busy loop inside can library
+    global sterzo_packets
+    if CANIndex == 0:
+        QThread.msleep(20)
+        pReceive._obj.ID = 0x187
+        pReceive._obj.TimeStamp = int(timing())
+        pReceive._obj.RemoteFlag = 0
+        pReceive._obj.ExternFlag = 0
+        pReceive._obj.DataLen = 2
+        data = struct.pack("<H", next(distance))
+        pReceive._obj.Data = (c_ubyte * 8)(*[c_ubyte(b) for b in data[:8]])
+    elif CANIndex == 1:
+        QThread.msleep(100)
+        packet = next(sterzo_packets)
+        pReceive._obj.ID = int(packet["frame_id"], 0)
+        pReceive._obj.TimeStamp = int(timing())
+        pReceive._obj.RemoteFlag = 0
+        pReceive._obj.ExternFlag = 0
+        pReceive._obj.DataLen = int(packet["length"])
+        data = bytes.fromhex(packet["data"])
+        pReceive._obj.Data = (c_ubyte * 8)(*[c_ubyte(b) for b in data[:8]])
+    return 1  # Success

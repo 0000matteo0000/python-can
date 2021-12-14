@@ -75,6 +75,7 @@ setup(
     scripts=list(filter(isfile, (join("scripts/", f) for f in listdir("scripts/")))),
     author="Python CAN contributors",
     license="LGPL v3",
+    include_package_data=True,
     package_data={
         "": ["README.rst", "CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.txt"],
         "doc": ["*.*"],

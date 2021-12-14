@@ -4,6 +4,7 @@ Interfaces contain low level implementations that interact with CAN hardware.
 
 # interface_name => (module, classname)
 BACKENDS = {
+    "ginkgousbcan": ("can.interfaces.ginkgousbcan", "GinkgoUsbCan"),
     "kvaser": ("can.interfaces.kvaser", "KvaserBus"),
     "socketcan": ("can.interfaces.socketcan", "SocketcanBus"),
     "serial": ("can.interfaces.serial.serial_can", "SerialBus"),
