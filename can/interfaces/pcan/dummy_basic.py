@@ -8,25 +8,21 @@
 #
 #  ------------------------------------------------------------------
 #  Author : Keneth Wagner
-#  Last change: 14.01.2021 Wagner
-#
-#  Language: Python 2.7, 3.7
 #  ------------------------------------------------------------------
 #
 #  Copyright (C) 1999-2021  PEAK-System Technik GmbH, Darmstadt
 #  more Info at http://www.peak-system.com
-#
 
+# Module Imports
 import csv
 import logging
 import platform
 import sys
-# Module Imports
-#
-from ctypes import (Structure, c_char, c_char_p, c_int, c_ubyte, c_uint,
-                    c_ulonglong, c_ushort, create_string_buffer)
+from ctypes import *
+from ctypes.util import find_library
 from itertools import cycle
 from math import pi, sin
+from string import *
 
 import numpy as np
 from PyQt5.QtCore import QThread
@@ -321,7 +317,7 @@ PCAN_CHANNEL_PCANVIEW = (
     PCAN_CHANNEL_AVAILABLE | PCAN_CHANNEL_OCCUPIED
 )  # The PCAN-Channel handle is already being used by a PCAN-View application, but is available to connect
 
-LOG_FUNCTION_DEFAULT = int(0x00)  # Logs system except Exceptionions / errors
+LOG_FUNCTION_DEFAULT = int(0x00)  # Logs system exceptions / errors
 LOG_FUNCTION_ENTRY = int(0x01)  # Logs the entries to the PCAN-Basic API functions
 LOG_FUNCTION_PARAMETERS = int(
     0x02
@@ -415,20 +411,20 @@ PCAN_MODE_EXTENDED = PCAN_MESSAGE_EXTENDED
 # Take a look at www.peak-system.com for our free software "BAUDTOOL"
 # to calculate the BTROBTR1 register for every bit rate and sample point.
 #
-PCAN_BAUD_1M = TPCANBaudrate(0x0014)  # 1 MBit/s
+PCAN_BAUD_1M = TPCANBaudrate(0x0014)  #   1 MBit/s
 PCAN_BAUD_800K = TPCANBaudrate(0x0016)  # 800 kBit/s
 PCAN_BAUD_500K = TPCANBaudrate(0x001C)  # 500 kBit/s
 PCAN_BAUD_250K = TPCANBaudrate(0x011C)  # 250 kBit/s
 PCAN_BAUD_125K = TPCANBaudrate(0x031C)  # 125 kBit/s
 PCAN_BAUD_100K = TPCANBaudrate(0x432F)  # 100 kBit/s
-PCAN_BAUD_95K = TPCANBaudrate(0xC34E)  # 95,238 kBit/s
-PCAN_BAUD_83K = TPCANBaudrate(0x852B)  # 83,333 kBit/s
-PCAN_BAUD_50K = TPCANBaudrate(0x472F)  # 50 kBit/s
-PCAN_BAUD_47K = TPCANBaudrate(0x1414)  # 47,619 kBit/s
-PCAN_BAUD_33K = TPCANBaudrate(0x8B2F)  # 33,333 kBit/s
-PCAN_BAUD_20K = TPCANBaudrate(0x532F)  # 20 kBit/s
-PCAN_BAUD_10K = TPCANBaudrate(0x672F)  # 10 kBit/s
-PCAN_BAUD_5K = TPCANBaudrate(0x7F7F)  # 5 kBit/s
+PCAN_BAUD_95K = TPCANBaudrate(0xC34E)  #  95,238 kBit/s
+PCAN_BAUD_83K = TPCANBaudrate(0x852B)  #  83,333 kBit/s
+PCAN_BAUD_50K = TPCANBaudrate(0x472F)  #  50 kBit/s
+PCAN_BAUD_47K = TPCANBaudrate(0x1414)  #  47,619 kBit/s
+PCAN_BAUD_33K = TPCANBaudrate(0x8B2F)  #  33,333 kBit/s
+PCAN_BAUD_20K = TPCANBaudrate(0x532F)  #  20 kBit/s
+PCAN_BAUD_10K = TPCANBaudrate(0x672F)  #  10 kBit/s
+PCAN_BAUD_5K = TPCANBaudrate(0x7F7F)  #   5 kBit/s
 
 # Represents the configuration for a CAN bit rate
 # Note:
@@ -559,9 +555,104 @@ class TPCANChannelInformation(Structure):
 
 
 # ///////////////////////////////////////////////////////////
-# PCAN-Basic API function declarations
+# Additional objects
 # ///////////////////////////////////////////////////////////
 
+PCAN_BITRATES = {
+    1000000: PCAN_BAUD_1M,
+    800000: PCAN_BAUD_800K,
+    500000: PCAN_BAUD_500K,
+    250000: PCAN_BAUD_250K,
+    125000: PCAN_BAUD_125K,
+    100000: PCAN_BAUD_100K,
+    95000: PCAN_BAUD_95K,
+    83000: PCAN_BAUD_83K,
+    50000: PCAN_BAUD_50K,
+    47000: PCAN_BAUD_47K,
+    33000: PCAN_BAUD_33K,
+    20000: PCAN_BAUD_20K,
+    10000: PCAN_BAUD_10K,
+    5000: PCAN_BAUD_5K,
+}
+
+PCAN_FD_PARAMETER_LIST = (
+    "nom_brp",
+    "nom_tseg1",
+    "nom_tseg2",
+    "nom_sjw",
+    "data_brp",
+    "data_tseg1",
+    "data_tseg2",
+    "data_sjw",
+)
+
+PCAN_CHANNEL_NAMES = {
+    "PCAN_NONEBUS": PCAN_NONEBUS,
+    "PCAN_ISABUS1": PCAN_ISABUS1,
+    "PCAN_ISABUS2": PCAN_ISABUS2,
+    "PCAN_ISABUS3": PCAN_ISABUS3,
+    "PCAN_ISABUS4": PCAN_ISABUS4,
+    "PCAN_ISABUS5": PCAN_ISABUS5,
+    "PCAN_ISABUS6": PCAN_ISABUS6,
+    "PCAN_ISABUS7": PCAN_ISABUS7,
+    "PCAN_ISABUS8": PCAN_ISABUS8,
+    "PCAN_DNGBUS1": PCAN_DNGBUS1,
+    "PCAN_PCIBUS1": PCAN_PCIBUS1,
+    "PCAN_PCIBUS2": PCAN_PCIBUS2,
+    "PCAN_PCIBUS3": PCAN_PCIBUS3,
+    "PCAN_PCIBUS4": PCAN_PCIBUS4,
+    "PCAN_PCIBUS5": PCAN_PCIBUS5,
+    "PCAN_PCIBUS6": PCAN_PCIBUS6,
+    "PCAN_PCIBUS7": PCAN_PCIBUS7,
+    "PCAN_PCIBUS8": PCAN_PCIBUS8,
+    "PCAN_PCIBUS9": PCAN_PCIBUS9,
+    "PCAN_PCIBUS10": PCAN_PCIBUS10,
+    "PCAN_PCIBUS11": PCAN_PCIBUS11,
+    "PCAN_PCIBUS12": PCAN_PCIBUS12,
+    "PCAN_PCIBUS13": PCAN_PCIBUS13,
+    "PCAN_PCIBUS14": PCAN_PCIBUS14,
+    "PCAN_PCIBUS15": PCAN_PCIBUS15,
+    "PCAN_PCIBUS16": PCAN_PCIBUS16,
+    "PCAN_USBBUS1": PCAN_USBBUS1,
+    "PCAN_USBBUS2": PCAN_USBBUS2,
+    "PCAN_USBBUS3": PCAN_USBBUS3,
+    "PCAN_USBBUS4": PCAN_USBBUS4,
+    "PCAN_USBBUS5": PCAN_USBBUS5,
+    "PCAN_USBBUS6": PCAN_USBBUS6,
+    "PCAN_USBBUS7": PCAN_USBBUS7,
+    "PCAN_USBBUS8": PCAN_USBBUS8,
+    "PCAN_USBBUS9": PCAN_USBBUS9,
+    "PCAN_USBBUS10": PCAN_USBBUS10,
+    "PCAN_USBBUS11": PCAN_USBBUS11,
+    "PCAN_USBBUS12": PCAN_USBBUS12,
+    "PCAN_USBBUS13": PCAN_USBBUS13,
+    "PCAN_USBBUS14": PCAN_USBBUS14,
+    "PCAN_USBBUS15": PCAN_USBBUS15,
+    "PCAN_USBBUS16": PCAN_USBBUS16,
+    "PCAN_PCCBUS1": PCAN_PCCBUS1,
+    "PCAN_PCCBUS2": PCAN_PCCBUS2,
+    "PCAN_LANBUS1": PCAN_LANBUS1,
+    "PCAN_LANBUS2": PCAN_LANBUS2,
+    "PCAN_LANBUS3": PCAN_LANBUS3,
+    "PCAN_LANBUS4": PCAN_LANBUS4,
+    "PCAN_LANBUS5": PCAN_LANBUS5,
+    "PCAN_LANBUS6": PCAN_LANBUS6,
+    "PCAN_LANBUS7": PCAN_LANBUS7,
+    "PCAN_LANBUS8": PCAN_LANBUS8,
+    "PCAN_LANBUS9": PCAN_LANBUS9,
+    "PCAN_LANBUS10": PCAN_LANBUS10,
+    "PCAN_LANBUS11": PCAN_LANBUS11,
+    "PCAN_LANBUS12": PCAN_LANBUS12,
+    "PCAN_LANBUS13": PCAN_LANBUS13,
+    "PCAN_LANBUS14": PCAN_LANBUS14,
+    "PCAN_LANBUS15": PCAN_LANBUS15,
+    "PCAN_LANBUS16": PCAN_LANBUS16,
+}
+
+
+# ///////////////////////////////////////////////////////////
+# PCAN-Basic API function declarations
+# ///////////////////////////////////////////////////////////
 
 channels = [f"--sim-pcan-channel-{n}" in sys.argv for n in range(16)]
 # distance = cycle([round(5000 + 50000 * (0.5 + 0.5 * sin(a))) for a in np.linspace(0, 2 * pi, num=1000)])
@@ -612,8 +703,8 @@ class PCANBasic:
         IOPort=c_uint(0),
         Interrupt=c_ushort(0),
     ):
-        """
-          Initializes a PCAN Channel
+
+        """Initializes a PCAN Channel
 
         Parameters:
           Channel  : A TPCANHandle representing a PCAN Channel
@@ -628,15 +719,15 @@ class PCANBasic:
         try:
             res = 0x0  # self.__m_dllBasic.CAN_Initialize(Channel, Btr0Btr1, HwType, IOPort, Interrupt)
             return TPCANStatus(res)
-        except Exception:
+        except:
             logger.error("Exception on PCANBasic.Initialize")
             raise
 
     # Initializes a FD capable PCAN Channel
     #
     def InitializeFD(self, Channel, BitrateFD):
-        """
-          Initializes a FD capable PCAN Channel
+
+        """Initializes a FD capable PCAN Channel
 
         Parameters:
           Channel  : The handle of a FD capable PCAN Channel
@@ -659,15 +750,15 @@ class PCANBasic:
         try:
             res = 0x0  # self.__m_dllBasic.CAN_InitializeFD(Channel, BitrateFD)
             return TPCANStatus(res)
-        except Exception:
+        except:
             logger.error("Exception on PCANBasic.InitializeFD")
             raise
 
     #  Uninitializes one or all PCAN Channels initialized by CAN_Initialize
     #
     def Uninitialize(self, Channel):
-        """
-          Uninitializes one or all PCAN Channels initialized by CAN_Initialize
+
+        """Uninitializes one or all PCAN Channels initialized by CAN_Initialize
 
         Remarks:
           Giving the TPCANHandle value "PCAN_NONEBUS", uninitialize all initialized channels
@@ -681,15 +772,15 @@ class PCANBasic:
         try:
             res = 0x0  # self.__m_dllBasic.CAN_Uninitialize(Channel)
             return TPCANStatus(res)
-        except Exception:
+        except:
             logger.error("Exception on PCANBasic.Uninitialize")
             raise
 
     #  Resets the receive and transmit queues of the PCAN Channel
     #
     def Reset(self, Channel):
-        """
-          Resets the receive and transmit queues of the PCAN Channel
+
+        """Resets the receive and transmit queues of the PCAN Channel
 
         Remarks:
           A reset of the CAN controller is not performed
@@ -703,15 +794,15 @@ class PCANBasic:
         try:
             res = 0x0  # self.__m_dllBasic.CAN_Reset(Channel)
             return TPCANStatus(res)
-        except Exception:
+        except:
             logger.error("Exception on PCANBasic.Reset")
             raise
 
     #  Gets the current status of a PCAN Channel
     #
     def GetStatus(self, Channel):
-        """
-          Gets the current status of a PCAN Channel
+
+        """Gets the current status of a PCAN Channel
 
         Parameters:
           Channel  : A TPCANHandle representing a PCAN Channel
@@ -722,18 +813,18 @@ class PCANBasic:
         try:
             res = 0x0  # self.__m_dllBasic.CAN_GetStatus(Channel)
             return TPCANStatus(res)
-        except Exception:
+        except:
             logger.error("Exception on PCANBasic.GetStatus")
             raise
 
     # Reads a CAN message from the receive queue of a PCAN Channel
     #
     def Read(self, Channel):
-        """
-          Reads a CAN message from the receive queue of a PCAN Channel
+
+        """Reads a CAN message from the receive queue of a PCAN Channel
 
         Remarks:
-          The return value of this method is a 3-touple, where
+          The return value of this method is a 3-tuple, where
           the first value is the result (TPCANStatus) of the method.
           The order of the values are:
           [0]: A TPCANStatus error code
@@ -744,33 +835,25 @@ class PCANBasic:
           Channel  : A TPCANHandle representing a PCAN Channel
 
         Returns:
-          A touple with three values
+          A tuple with three values
         """
         try:
-            global pump_packets
-            packet = next(pump_packets)
-            QThread.msleep(100)
-            msg = TPCANMsg(
-                ID=int(packet["frame_id"], 0),
-                MSGTYPE=PCAN_MESSAGE_STANDARD,
-                LEN=int(packet["length"]),
-                DATA=(c_ubyte * 8)(*[c_ubyte(b) for b in bytes.fromhex(packet["data"])[:8]])
-            )
+            msg = TPCANMsg()
             timestamp = TPCANTimestamp()
             res = 0x0  # self.__m_dllBasic.CAN_Read(Channel, byref(msg), byref(timestamp))
             return TPCANStatus(res), msg, timestamp
-        except Exception:
+        except:
             logger.error("Exception on PCANBasic.Read")
             raise
 
     # Reads a CAN message from the receive queue of a FD capable PCAN Channel
     #
     def ReadFD(self, Channel):
-        """
-          Reads a CAN message from the receive queue of a FD capable PCAN Channel
+
+        """Reads a CAN message from the receive queue of a FD capable PCAN Channel
 
         Remarks:
-          The return value of this method is a 3-touple, where
+          The return value of this method is a 3-tuple, where
           the first value is the result (TPCANStatus) of the method.
           The order of the values are:
           [0]: A TPCANStatus error code
@@ -781,22 +864,22 @@ class PCANBasic:
           Channel  : The handle of a FD capable PCAN Channel
 
         Returns:
-          A touple with three values
+          A tuple with three values
         """
         try:
             msg = TPCANMsgFD()
             timestamp = TPCANTimestampFD()
             res = 0x0  # self.__m_dllBasic.CAN_ReadFD(Channel, byref(msg), byref(timestamp))
             return TPCANStatus(res), msg, timestamp
-        except Exception:
+        except:
             logger.error("Exception on PCANBasic.ReadFD")
             raise
 
     # Transmits a CAN message
     #
     def Write(self, Channel, MessageBuffer):
-        """
-          Transmits a CAN message
+
+        """Transmits a CAN message
 
         Parameters:
           Channel      : A TPCANHandle representing a PCAN Channel
@@ -808,15 +891,15 @@ class PCANBasic:
         try:
             res = 0x0  # self.__m_dllBasic.CAN_Write(Channel, byref(MessageBuffer))
             return TPCANStatus(res)
-        except Exception:
+        except:
             logger.error("Exception on PCANBasic.Write")
             raise
 
     # Transmits a CAN message over a FD capable PCAN Channel
     #
     def WriteFD(self, Channel, MessageBuffer):
-        """
-          Transmits a CAN message over a FD capable PCAN Channel
+
+        """Transmits a CAN message over a FD capable PCAN Channel
 
         Parameters:
           Channel      : The handle of a FD capable PCAN Channel
@@ -828,15 +911,15 @@ class PCANBasic:
         try:
             res = 0x0  # self.__m_dllBasic.CAN_WriteFD(Channel, byref(MessageBuffer))
             return TPCANStatus(res)
-        except Exception:
+        except:
             logger.error("Exception on PCANBasic.WriteFD")
             raise
 
     # Configures the reception filter
     #
     def FilterMessages(self, Channel, FromID, ToID, Mode):
-        """
-          Configures the reception filter
+
+        """Configures the reception filter
 
         Remarks:
           The message filter will be expanded with every call to this function.
@@ -855,22 +938,22 @@ class PCANBasic:
         try:
             res = 0x0  # self.__m_dllBasic.CAN_FilterMessages(Channel, FromID, ToID, Mode)
             return TPCANStatus(res)
-        except Exception:
+        except:
             logger.error("Exception on PCANBasic.FilterMessages")
             raise
 
     # Retrieves a PCAN Channel value
     #
     def GetValue(self, Channel, Parameter):
-        """
-          Retrieves a PCAN Channel value
+
+        """Retrieves a PCAN Channel value
 
         Remarks:
           Parameters can be present or not according with the kind
           of Hardware (PCAN Channel) being used. If a parameter is not available,
           a PCAN_ERROR_ILLPARAMTYPE error will be returned.
 
-          The return value of this method is a 2-touple, where
+          The return value of this method is a 2-tuple, where
           the first value is the result (TPCANStatus) of the method and
           the second one, the asked value
 
@@ -879,7 +962,7 @@ class PCANBasic:
           Parameter : The TPCANParameter parameter to get
 
         Returns:
-          A touple with 2 values
+          A tuple with 2 values
         """
         try:
             if (
@@ -908,7 +991,7 @@ class PCANBasic:
                 return TPCANStatus(res), mybuffer
             else:
                 return TPCANStatus(res), mybuffer.value
-        except Exception:
+        except:
             logger.error("Exception on PCANBasic.GetValue")
             raise
 
@@ -916,9 +999,9 @@ class PCANBasic:
     # error code, in any desired language
     #
     def SetValue(self, Channel, Parameter, Buffer):
-        """
-          Returns a descriptive text of a given TPCANStatus error
-          code, in any desired language
+
+        """Returns a descriptive text of a given TPCANStatus error
+        code, in any desired language
 
         Remarks:
           Parameters can be present or not according with the kind
@@ -947,13 +1030,13 @@ class PCANBasic:
             mybuffer.value = Buffer
             res = 0x0  # self.__m_dllBasic.CAN_SetValue(Channel, Parameter, byref(mybuffer), sizeof(mybuffer))
             return TPCANStatus(res)
-        except Exception:
+        except:
             logger.error("Exception on PCANBasic.SetValue")
             raise
 
     def GetErrorText(self, Error, Language=0):
-        """
-          Configures or sets a PCAN Channel value
+
+        """Configures or sets a PCAN Channel value
 
         Remarks:
 
@@ -961,7 +1044,7 @@ class PCANBasic:
           Neutral (0x00), German (0x07), English (0x09), Spanish (0x0A),
           Italian (0x10) and French (0x0C)
 
-          The return value of this method is a 2-touple, where
+          The return value of this method is a 2-tuple, where
           the first value is the result (TPCANStatus) of the method and
           the second one, the error text
 
@@ -970,23 +1053,23 @@ class PCANBasic:
           Language : Indicates a 'Primary language ID' (Default is Neutral(0))
 
         Returns:
-          A touple with 2 values
+          A tuple with 2 values
         """
         try:
             mybuffer = create_string_buffer(256)
             res = 0x0  # self.__m_dllBasic.CAN_GetErrorText(Error, Language, byref(mybuffer))
             return TPCANStatus(res), mybuffer.value
-        except Exception:
+        except:
             logger.error("Exception on PCANBasic.GetErrorText")
             raise
 
     def LookUpChannel(self, Parameters):
-        """
-            Finds a PCAN-Basic channel that matches with the given parameters
+
+        """Finds a PCAN-Basic channel that matches with the given parameters
 
         Remarks:
 
-          The return value of this method is a 2-touple, where
+          The return value of this method is a 2-tuple, where
           the first value is the result (TPCANStatus) of the method and
           the second one a TPCANHandle value
 
@@ -995,12 +1078,12 @@ class PCANBasic:
                            to be matched within a PCAN-Basic channel
 
         Returns:
-          A touple with 2 values
+          A tuple with 2 values
         """
         try:
             mybuffer = TPCANHandle(0)
             res = 0x0  # self.__m_dllBasic.CAN_LookUpChannel(Parameters, byref(mybuffer))
             return TPCANStatus(res), mybuffer
-        except Exception:
+        except:
             logger.error("Exception on PCANBasic.LookUpChannel")
             raise
