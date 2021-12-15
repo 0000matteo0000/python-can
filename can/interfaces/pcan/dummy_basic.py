@@ -411,20 +411,20 @@ PCAN_MODE_EXTENDED = PCAN_MESSAGE_EXTENDED
 # Take a look at www.peak-system.com for our free software "BAUDTOOL"
 # to calculate the BTROBTR1 register for every bit rate and sample point.
 #
-PCAN_BAUD_1M = TPCANBaudrate(0x0014)  #   1 MBit/s
+PCAN_BAUD_1M = TPCANBaudrate(0x0014)  # 1 MBit/s
 PCAN_BAUD_800K = TPCANBaudrate(0x0016)  # 800 kBit/s
 PCAN_BAUD_500K = TPCANBaudrate(0x001C)  # 500 kBit/s
 PCAN_BAUD_250K = TPCANBaudrate(0x011C)  # 250 kBit/s
 PCAN_BAUD_125K = TPCANBaudrate(0x031C)  # 125 kBit/s
 PCAN_BAUD_100K = TPCANBaudrate(0x432F)  # 100 kBit/s
-PCAN_BAUD_95K = TPCANBaudrate(0xC34E)  #  95,238 kBit/s
-PCAN_BAUD_83K = TPCANBaudrate(0x852B)  #  83,333 kBit/s
-PCAN_BAUD_50K = TPCANBaudrate(0x472F)  #  50 kBit/s
-PCAN_BAUD_47K = TPCANBaudrate(0x1414)  #  47,619 kBit/s
-PCAN_BAUD_33K = TPCANBaudrate(0x8B2F)  #  33,333 kBit/s
-PCAN_BAUD_20K = TPCANBaudrate(0x532F)  #  20 kBit/s
-PCAN_BAUD_10K = TPCANBaudrate(0x672F)  #  10 kBit/s
-PCAN_BAUD_5K = TPCANBaudrate(0x7F7F)  #   5 kBit/s
+PCAN_BAUD_95K = TPCANBaudrate(0xC34E)  # 95,238 kBit/s
+PCAN_BAUD_83K = TPCANBaudrate(0x852B)  # 83,333 kBit/s
+PCAN_BAUD_50K = TPCANBaudrate(0x472F)  # 50 kBit/s
+PCAN_BAUD_47K = TPCANBaudrate(0x1414)  # 47,619 kBit/s
+PCAN_BAUD_33K = TPCANBaudrate(0x8B2F)  # 33,333 kBit/s
+PCAN_BAUD_20K = TPCANBaudrate(0x532F)  # 20 kBit/s
+PCAN_BAUD_10K = TPCANBaudrate(0x672F)  # 10 kBit/s
+PCAN_BAUD_5K = TPCANBaudrate(0x7F7F)  # 5 kBit/s
 
 # Represents the configuration for a CAN bit rate
 # Note:
@@ -657,7 +657,7 @@ PCAN_CHANNEL_NAMES = {
 channels = [f"--sim-pcan-channel-{n}" in sys.argv for n in range(16)]
 # distance = cycle([round(5000 + 50000 * (0.5 + 0.5 * sin(a))) for a in np.linspace(0, 2 * pi, num=1000)])
 with open("src/prove/p.csv") as f:
-    pump_packets = cycle(list(csv.DictReader(f, fieldnames=["count", "index", "direction", "type", "format", "frame_id", "length", "data", "status", "time"])))
+    packets = cycle(list(csv.DictReader(f, fieldnames=["count", "index", "direction", "type", "format", "frame_id", "length", "data", "status", "time"])))
 last_packet_sent = False
 
 
@@ -704,7 +704,6 @@ class PCANBasic:
         IOPort=c_uint(0),
         Interrupt=c_ushort(0),
     ):
-
         """Initializes a PCAN Channel
 
         Parameters:
@@ -727,7 +726,6 @@ class PCANBasic:
     # Initializes a FD capable PCAN Channel
     #
     def InitializeFD(self, Channel, BitrateFD):
-
         """Initializes a FD capable PCAN Channel
 
         Parameters:
@@ -758,7 +756,6 @@ class PCANBasic:
     #  Uninitializes one or all PCAN Channels initialized by CAN_Initialize
     #
     def Uninitialize(self, Channel):
-
         """Uninitializes one or all PCAN Channels initialized by CAN_Initialize
 
         Remarks:
@@ -780,7 +777,6 @@ class PCANBasic:
     #  Resets the receive and transmit queues of the PCAN Channel
     #
     def Reset(self, Channel):
-
         """Resets the receive and transmit queues of the PCAN Channel
 
         Remarks:
@@ -802,7 +798,6 @@ class PCANBasic:
     #  Gets the current status of a PCAN Channel
     #
     def GetStatus(self, Channel):
-
         """Gets the current status of a PCAN Channel
 
         Parameters:
@@ -821,7 +816,6 @@ class PCANBasic:
     # Reads a CAN message from the receive queue of a PCAN Channel
     #
     def Read(self, Channel):
-
         """Reads a CAN message from the receive queue of a PCAN Channel
 
         Remarks:
@@ -839,7 +833,7 @@ class PCANBasic:
           A tuple with three values
         """
         try:
-            global last_packet_sent, pump_packets
+            global last_packet_sent, packets
             if last_packet_sent:
                 msg = TPCANMsg()
                 timestamp = TPCANTimestamp()
@@ -847,7 +841,7 @@ class PCANBasic:
                 last_packet_sent = False
                 return PCAN_ERROR_QRCVEMPTY, msg, timestamp
             else:
-                packet = next(pump_packets)
+                packet = next(packets)
                 QThread.msleep(100)
                 msg = TPCANMsg(
                     ID=int(packet["frame_id"], 0),
@@ -866,7 +860,6 @@ class PCANBasic:
     # Reads a CAN message from the receive queue of a FD capable PCAN Channel
     #
     def ReadFD(self, Channel):
-
         """Reads a CAN message from the receive queue of a FD capable PCAN Channel
 
         Remarks:
@@ -895,7 +888,6 @@ class PCANBasic:
     # Transmits a CAN message
     #
     def Write(self, Channel, MessageBuffer):
-
         """Transmits a CAN message
 
         Parameters:
@@ -915,7 +907,6 @@ class PCANBasic:
     # Transmits a CAN message over a FD capable PCAN Channel
     #
     def WriteFD(self, Channel, MessageBuffer):
-
         """Transmits a CAN message over a FD capable PCAN Channel
 
         Parameters:
@@ -935,7 +926,6 @@ class PCANBasic:
     # Configures the reception filter
     #
     def FilterMessages(self, Channel, FromID, ToID, Mode):
-
         """Configures the reception filter
 
         Remarks:
@@ -962,7 +952,6 @@ class PCANBasic:
     # Retrieves a PCAN Channel value
     #
     def GetValue(self, Channel, Parameter):
-
         """Retrieves a PCAN Channel value
 
         Remarks:
@@ -1016,7 +1005,6 @@ class PCANBasic:
     # error code, in any desired language
     #
     def SetValue(self, Channel, Parameter, Buffer):
-
         """Returns a descriptive text of a given TPCANStatus error
         code, in any desired language
 
@@ -1052,7 +1040,6 @@ class PCANBasic:
             raise
 
     def GetErrorText(self, Error, Language=0):
-
         """Configures or sets a PCAN Channel value
 
         Remarks:
@@ -1081,7 +1068,6 @@ class PCANBasic:
             raise
 
     def LookUpChannel(self, Parameters):
-
         """Finds a PCAN-Basic channel that matches with the given parameters
 
         Remarks:

@@ -292,13 +292,13 @@ def set_timing_function(timing_function):
 
 distance = cycle([round(5000 + 50000 * (0.5 + 0.5 * sin(a))) for a in np.linspace(0, 2 * pi, num=1000)])
 with open("src/prove/t.csv") as f:
-    sterzo_packets = cycle(list(csv.DictReader(f, fieldnames=["count", "index", "direction", "type", "format", "frame_id", "length", "data", "status", "time"])))
+    packets = cycle(list(csv.DictReader(f, fieldnames=["count", "index", "direction", "type", "format", "frame_id", "length", "data", "status", "time"])))
 
 
 # Read CAN data from buffer
 def VCI_Receive(DevType, DevIndex, CANIndex, pReceive, Len, WaitTime):
     # to fix busy loop inside can library
-    global sterzo_packets
+    global packets
     if CANIndex == 0:
         QThread.msleep(20)
         pReceive._obj.ID = 0x187
@@ -310,7 +310,7 @@ def VCI_Receive(DevType, DevIndex, CANIndex, pReceive, Len, WaitTime):
         pReceive._obj.Data = (c_ubyte * 8)(*[c_ubyte(b) for b in data[:8]])
     elif CANIndex == 1:
         QThread.msleep(100)
-        packet = next(sterzo_packets)
+        packet = next(packets)
         pReceive._obj.ID = int(packet["frame_id"], 0)
         pReceive._obj.TimeStamp = int(timing())
         pReceive._obj.RemoteFlag = 0
