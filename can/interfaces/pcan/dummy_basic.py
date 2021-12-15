@@ -717,7 +717,7 @@ class PCANBasic:
           A TPCANStatus error code
         """
         try:
-            res = 0x0  # self.__m_dllBasic.CAN_Initialize(Channel, Btr0Btr1, HwType, IOPort, Interrupt)
+            res = PCAN_ERROR_OK  # self.__m_dllBasic.CAN_Initialize(Channel, Btr0Btr1, HwType, IOPort, Interrupt)
             return TPCANStatus(res)
         except:
             logger.error("Exception on PCANBasic.Initialize")
@@ -747,7 +747,7 @@ class PCANBasic:
           A TPCANStatus error code
         """
         try:
-            res = 0x0  # self.__m_dllBasic.CAN_InitializeFD(Channel, BitrateFD)
+            res = PCAN_ERROR_OK  # self.__m_dllBasic.CAN_InitializeFD(Channel, BitrateFD)
             return TPCANStatus(res)
         except:
             logger.error("Exception on PCANBasic.InitializeFD")
@@ -768,7 +768,7 @@ class PCANBasic:
           A TPCANStatus error code
         """
         try:
-            res = 0x0  # self.__m_dllBasic.CAN_Uninitialize(Channel)
+            res = PCAN_ERROR_OK  # self.__m_dllBasic.CAN_Uninitialize(Channel)
             return TPCANStatus(res)
         except:
             logger.error("Exception on PCANBasic.Uninitialize")
@@ -789,7 +789,7 @@ class PCANBasic:
           A TPCANStatus error code
         """
         try:
-            res = 0x0  # self.__m_dllBasic.CAN_Reset(Channel)
+            res = PCAN_ERROR_OK  # self.__m_dllBasic.CAN_Reset(Channel)
             return TPCANStatus(res)
         except:
             logger.error("Exception on PCANBasic.Reset")
@@ -807,7 +807,7 @@ class PCANBasic:
           A TPCANStatus error code
         """
         try:
-            res = 0x0  # self.__m_dllBasic.CAN_GetStatus(Channel)
+            res = PCAN_ERROR_OK  # self.__m_dllBasic.CAN_GetStatus(Channel)
             return TPCANStatus(res)
         except:
             logger.error("Exception on PCANBasic.GetStatus")
@@ -837,7 +837,7 @@ class PCANBasic:
             if last_packet_sent:
                 msg = TPCANMsg()
                 timestamp = TPCANTimestamp()
-                res = 0x0
+                res = PCAN_ERROR_OK
                 last_packet_sent = False
                 return PCAN_ERROR_QRCVEMPTY, msg, timestamp
             else:
@@ -850,7 +850,7 @@ class PCANBasic:
                     DATA=(c_ubyte * 8)(*[c_ubyte(b) for b in bytes.fromhex(packet["data"])[:8]])
                 )
                 timestamp = TPCANTimestamp()
-                res = 0x0  # self.__m_dllBasic.CAN_Read(Channel, byref(msg), byref(timestamp))
+                res = PCAN_ERROR_OK  # self.__m_dllBasic.CAN_Read(Channel, byref(msg), byref(timestamp))
                 last_packet_sent = True
                 return TPCANStatus(res), msg, timestamp
         except:
@@ -879,7 +879,7 @@ class PCANBasic:
         try:
             msg = TPCANMsgFD()
             timestamp = TPCANTimestampFD()
-            res = 0x0  # self.__m_dllBasic.CAN_ReadFD(Channel, byref(msg), byref(timestamp))
+            res = PCAN_ERROR_OK  # self.__m_dllBasic.CAN_ReadFD(Channel, byref(msg), byref(timestamp))
             return TPCANStatus(res), msg, timestamp
         except:
             logger.error("Exception on PCANBasic.ReadFD")
@@ -898,7 +898,7 @@ class PCANBasic:
           A TPCANStatus error code
         """
         try:
-            res = 0x0  # self.__m_dllBasic.CAN_Write(Channel, byref(MessageBuffer))
+            res = PCAN_ERROR_OK  # self.__m_dllBasic.CAN_Write(Channel, byref(MessageBuffer))
             return TPCANStatus(res)
         except:
             logger.error("Exception on PCANBasic.Write")
@@ -917,7 +917,7 @@ class PCANBasic:
           A TPCANStatus error code
         """
         try:
-            res = 0x0  # self.__m_dllBasic.CAN_WriteFD(Channel, byref(MessageBuffer))
+            res = PCAN_ERROR_OK  # self.__m_dllBasic.CAN_WriteFD(Channel, byref(MessageBuffer))
             return TPCANStatus(res)
         except:
             logger.error("Exception on PCANBasic.WriteFD")
@@ -943,7 +943,7 @@ class PCANBasic:
           A TPCANStatus error code
         """
         try:
-            res = 0x0  # self.__m_dllBasic.CAN_FilterMessages(Channel, FromID, ToID, Mode)
+            res = PCAN_ERROR_OK  # self.__m_dllBasic.CAN_FilterMessages(Channel, FromID, ToID, Mode)
             return TPCANStatus(res)
         except:
             logger.error("Exception on PCANBasic.FilterMessages")
@@ -992,7 +992,7 @@ class PCANBasic:
             else:
                 mybuffer = c_int(0)
 
-            res = 0x0  # self.__m_dllBasic.CAN_GetValue(Channel, Parameter, byref(mybuffer), sizeof(mybuffer))
+            res = PCAN_ERROR_OK  # self.__m_dllBasic.CAN_GetValue(Channel, Parameter, byref(mybuffer), sizeof(mybuffer))
             if Parameter == PCAN_ATTACHED_CHANNELS:
                 return TPCANStatus(res), mybuffer
             else:
@@ -1033,7 +1033,7 @@ class PCANBasic:
                 mybuffer = c_int(0)
 
             mybuffer.value = Buffer
-            res = 0x0  # self.__m_dllBasic.CAN_SetValue(Channel, Parameter, byref(mybuffer), sizeof(mybuffer))
+            res = PCAN_ERROR_OK  # self.__m_dllBasic.CAN_SetValue(Channel, Parameter, byref(mybuffer), sizeof(mybuffer))
             return TPCANStatus(res)
         except:
             logger.error("Exception on PCANBasic.SetValue")
@@ -1061,7 +1061,7 @@ class PCANBasic:
         """
         try:
             mybuffer = create_string_buffer(256)
-            res = 0x0  # self.__m_dllBasic.CAN_GetErrorText(Error, Language, byref(mybuffer))
+            res = PCAN_ERROR_OK  # self.__m_dllBasic.CAN_GetErrorText(Error, Language, byref(mybuffer))
             return TPCANStatus(res), mybuffer.value
         except:
             logger.error("Exception on PCANBasic.GetErrorText")
@@ -1085,7 +1085,7 @@ class PCANBasic:
         """
         try:
             mybuffer = TPCANHandle(0)
-            res = 0x0  # self.__m_dllBasic.CAN_LookUpChannel(Parameters, byref(mybuffer))
+            res = PCAN_ERROR_OK  # self.__m_dllBasic.CAN_LookUpChannel(Parameters, byref(mybuffer))
             return TPCANStatus(res), mybuffer
         except:
             logger.error("Exception on PCANBasic.LookUpChannel")
