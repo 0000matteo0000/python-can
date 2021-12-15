@@ -658,6 +658,7 @@ channels = [f"--sim-pcan-channel-{n}" in sys.argv for n in range(16)]
 # distance = cycle([round(5000 + 50000 * (0.5 + 0.5 * sin(a))) for a in np.linspace(0, 2 * pi, num=1000)])
 with open("src/prove/p.csv") as f:
     pump_packets = cycle(list(csv.DictReader(f, fieldnames=["count", "index", "direction", "type", "format", "frame_id", "length", "data", "status", "time"])))
+last_packet_sent = False
 
 
 # PCAN-Basic API class implementation
@@ -838,18 +839,26 @@ class PCANBasic:
           A tuple with three values
         """
         try:
-            global pump_packets
-            packet = next(pump_packets)
-            QThread.msleep(100)
-            msg = TPCANMsg(
-                ID=int(packet["frame_id"], 0),
-                MSGTYPE=PCAN_MESSAGE_STANDARD,
-                LEN=int(packet["length"]),
-                DATA=(c_ubyte * 8)(*[c_ubyte(b) for b in bytes.fromhex(packet["data"])[:8]])
-            )
-            timestamp = TPCANTimestamp()
-            res = 0x0  # self.__m_dllBasic.CAN_Read(Channel, byref(msg), byref(timestamp))
-            return TPCANStatus(res), msg, timestamp
+            global last_packet_sent, pump_packets
+            if last_packet_sent:
+                msg = TPCANMsg()
+                timestamp = TPCANTimestamp()
+                res = 0x0
+                last_packet_sent = False
+                return PCAN_ERROR_QRCVEMPTY, msg, timestamp
+            else:
+                packet = next(pump_packets)
+                QThread.msleep(100)
+                msg = TPCANMsg(
+                    ID=int(packet["frame_id"], 0),
+                    MSGTYPE=PCAN_MESSAGE_STANDARD,
+                    LEN=int(packet["length"]),
+                    DATA=(c_ubyte * 8)(*[c_ubyte(b) for b in bytes.fromhex(packet["data"])[:8]])
+                )
+                timestamp = TPCANTimestamp()
+                res = 0x0  # self.__m_dllBasic.CAN_Read(Channel, byref(msg), byref(timestamp))
+                last_packet_sent = True
+                return TPCANStatus(res), msg, timestamp
         except:
             logger.error("Exception on PCANBasic.Read")
             raise
