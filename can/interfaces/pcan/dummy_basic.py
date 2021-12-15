@@ -838,7 +838,15 @@ class PCANBasic:
           A tuple with three values
         """
         try:
-            msg = TPCANMsg()
+            global pump_packets
+            packet = next(pump_packets)
+            QThread.msleep(100)
+            msg = TPCANMsg(
+                ID=int(packet["frame_id"], 0),
+                MSGTYPE=PCAN_MESSAGE_STANDARD,
+                LEN=int(packet["length"]),
+                DATA=(c_ubyte * 8)(*[c_ubyte(b) for b in bytes.fromhex(packet["data"])[:8]])
+            )
             timestamp = TPCANTimestamp()
             res = 0x0  # self.__m_dllBasic.CAN_Read(Channel, byref(msg), byref(timestamp))
             return TPCANStatus(res), msg, timestamp
